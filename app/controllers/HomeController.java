@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
+import models.ConnectionRequest;
 import models.Profile;
 import models.User;
+import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.mvc.Controller;
 import play.mvc.Result;
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
  */
 public class HomeController extends Controller {
     @Inject ObjectMapper objectMapper;
-    @Inject FormFactory fromFactory;
+    @Inject FormFactory formFactory;
     public Result getProfile(Long userId){
         User user = User.find.byId(userId);
         Profile profile = Profile.find.byId(user.profile.id);
@@ -49,6 +51,28 @@ public class HomeController extends Controller {
             return connectionjson;
 
         }).collect(Collectors.toList())));
-    return ok();
+        data.set("connectionRequestReceived", objectMapper.valueToTree(user.connectionRequestRecieved.stream()
+                .map(x ->{
+                    User requestor = User.find.byId(x.sender.id);
+                    Profile requestorprofile = Profile.find.byId(requestor.profile.id);
+                    ObjectNode requestorjson = objectMapper.createObjectNode();
+                    requestorjson.put("email", requestor.email);
+                    requestorjson.put("firstName", requestorprofile.firstName);
+                    requestorjson.put("lastName", requestorprofile.lastName);
+                    return requestorjson;
+
+                }).collect(Collectors.toList())));
+    return ok(data);
+    }
+    public Result updateProfile(Long userId){
+        DynamicForm form = formFactory.form().bindFromRequest();
+        User user = User.find.byId(userId);
+        Profile profile = Profile.find.byId(user.profile.id);
+        profile.company = form.get("company");
+        profile.firstName = form.get("firstName");
+        profile.lastName = form.get("lastName");
+        Profile.db().update(profile);
+        return ok();
     }
 }
+
