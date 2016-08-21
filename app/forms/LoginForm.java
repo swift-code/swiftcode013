@@ -17,9 +17,9 @@ public class LoginForm {
     public String password;
     public List<ValidationError> validate() {
         List<ValidationError> errors = new ArrayList<>();
-        User user = User.find.where().eq("email",email).findUnique();
-        if(user !=null){
-            errors.add(new ValidationError("message","Email already exits"));
+        User user = User.authentication(email,password);
+        if(user ==null){
+            errors.add(new ValidationError("message","invalid user name/password"));
             errors.add(new ValidationError("email","Error"));
         }
         return errors;
